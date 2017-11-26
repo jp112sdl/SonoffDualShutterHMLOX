@@ -40,7 +40,7 @@ void webSetValue() {
             break;
           }
           int val = atoi(WebServer.arg(i).c_str());
-          val = val / 10;
+          val = val;
           DEBUG("Web val = "+String(val));
           if (val >= 0 && val <= 100)
             ShutterControl(val);
