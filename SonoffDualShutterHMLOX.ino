@@ -25,6 +25,12 @@ const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/So
 #define HTTPTimeOut                       2000
 #define EXTRADRIVETIMEFORENDPOSTIONMILLIS 1500
 //#define                                   SERIALDEBUG
+#define                                   UDPDEBUG
+
+#ifdef UDPDEBUG
+const char * SYSLOGIP = "192.168.1.251";
+#define SYSLOGPORT          514
+#endif
 
 enum BackendTypes_e {
   BackendType_HomeMatic,
