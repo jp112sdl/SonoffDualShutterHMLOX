@@ -13,6 +13,7 @@
 #include "css_global.h"
 #include "js_global.h"
 #include "js_fwupd.h"
+#include <EEPROM.h>
 
 const String FIRMWARE_VERSION = "0.1";
 const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/SonoffDualShutterHMLOX/releases/latest";
@@ -93,6 +94,7 @@ byte DRIVING_DIRECTION = DIRECTION_NONE;
 byte shutter_start_value_percent = 0;
 byte oldShutterValue = 0;
 bool startWifiManager = false;
+byte TempTargetValue = 0;
 const String configJsonFile         = "config.json";
 const String bootConfigModeFilename = "bootcfg.mod";
 bool wm_shouldSaveConfig        = false;
@@ -106,10 +108,12 @@ struct udp_t {
   char incomingPacket[255];
 } UDPClient;
 
+#define idxLastShutterValue 0
+
 void setup() {
   Serial.begin(19200);
   switch_dual_relay(DIRECTION_NONE);
-  Serial.println("\nSonoff " + WiFi.macAddress() + " startet...");
+  Serial.println("\nSonoff DUAL " + WiFi.macAddress() + " startet...");
   pinMode(LEDPin,    OUTPUT);
 
   Serial.println(F("Config-Modus durch bootConfigMode aktivieren? "));
@@ -166,6 +170,12 @@ void setup() {
     DEBUG("HomeMaticConfig.ChannelName =  " + HomeMaticConfig.ChannelName);
   }
 
+  EEPROM.begin(512);
+  byte eeShutterValue = EEPROM.read(idxLastShutterValue);
+  if (eeShutterValue > 100) eeShutterValue = 100;
+  ShutterConfig.CurrentValue = eeShutterValue;
+  DEBUG("Restored last shutter value " + String(ShutterConfig.CurrentValue));
+
   DEBUG(String(GlobalConfig.DeviceName) + " - Boot abgeschlossen, SSID = " + WiFi.SSID() + ", IP = " + String(IpAddress2String(WiFi.localIP())) + ", RSSI = " + WiFi.RSSI() + ", MAC = " + WiFi.macAddress(), "Setup", _slInformational);
 }
 
@@ -177,44 +187,58 @@ void loop() {
     WebServer.handleClient();
   }
 
+  //aktuellen Stand während der Fahrt berechnen
   byte CurrentValueTemp = calculatePercent(shutter_start_value_percent, DRIVING_DIRECTION);
   if (shutter_start_value_percent != CurrentValueTemp) {
     ShutterConfig.CurrentValue = CurrentValueTemp;
   }
 
+  //Schalte Relais ab, wenn die Fahrzeit erreicht wurde
   if (DRIVING_DIRECTION > DIRECTION_NONE && dual_relay_switched_millis > 0 && millis() - dual_relay_switched_millis > dual_relay_drive_time) {
     DEBUG("Schalte Relais ab!");
     switch_dual_relay(DIRECTION_NONE);
-    switch_dual_relay(DIRECTION_NONE);
+    switch_dual_relay(DIRECTION_NONE); //doppelt hält besser... sicher ist sicher
     dual_relay_switched_millis = 0;
     dual_relay_drive_time = 0;
   }
 
-  if (millis() - LastMillis > 2500) {
-    LastMillis = millis();
-    if (oldShutterValue != ShutterConfig.CurrentValue) {
-      oldShutterValue = ShutterConfig.CurrentValue;
+  //Fahrt-Zähler für Kalibrierungsfahrten auf 0 setzen, wenn eine der beiden Endlagen angefahren wurde
+  if (ShutterConfig.CurrentValue == 0 ||  ShutterConfig.CurrentValue == 100)  ShutterConfig.DriveCounter = 0;
+
+  //Wenn Kalibrierfahrt läuft und Endposition 100% erreicht, dann fahre ursprüngliche Zielposition an
+  if (ShutterConfig.CurrentValue == 100 && TempTargetValue > 0 && DRIVING_DIRECTION == DIRECTION_NONE) {
+    delay(ShutterConfig.MotorSwitchingTime * 1000);
+    ShutterControl(TempTargetValue);
+  }
+
+  //alle 2 Sekunden Wert an CCU senden
+  if (oldShutterValue != ShutterConfig.CurrentValue) {
+    oldShutterValue = ShutterConfig.CurrentValue;
+    EEPROM.write(idxLastShutterValue, ShutterConfig.CurrentValue);
+    EEPROM.commit();
+    if (millis() - LastMillis > 2500) {
+      LastMillis = millis();
       float ccuVal = float(ShutterConfig.CurrentValue / 100.0);
       //if (GlobalConfig.BackendType == BackendType_HomeMatic) setStateCUxD(HomeMaticConfig.ChannelName + ".LEVEL", String(ccuVal));
     }
   }
 }
 
-void ShutterControl(byte targetValue) {
-  DEBUG("ShutterControl "+String(targetValue));
-  if (targetValue == 0 ||  targetValue == 100)
-    ShutterConfig.DriveCounter = 0;
-  else
-    ShutterConfig.DriveCounter++;
+void ShutterControl(byte TargetValue) {
+  DEBUG("ShutterControl(" + String(TargetValue) + ")");
 
+  ShutterConfig.DriveCounter++;
 
   if (ShutterConfig.DriveCounter > ShutterConfig.DriveUntilCalib) {
     ShutterConfig.DriveCounter = 1;
-    //TODO: Fahre zu 100% dann fahre zu targetValue
+    TempTargetValue = TargetValue;
+    TargetValue = 100;
+  } else {
+    TempTargetValue = 0;
   }
 
-  if (targetValue > ShutterConfig.CurrentValue || targetValue == 100) {
-    dual_relay_drive_time = calculateDriveTime(targetValue, ShutterConfig.CurrentValue, DIRECTION_UP);
+  if (TargetValue > ShutterConfig.CurrentValue || TargetValue == 100) {
+    dual_relay_drive_time = calculateDriveTime(TargetValue, ShutterConfig.CurrentValue, DIRECTION_UP);
     if (dual_relay_drive_time > 0) {
       if (DRIVING_DIRECTION == DIRECTION_DOWN) {
         switch_dual_relay(DIRECTION_NONE);
@@ -224,8 +248,8 @@ void ShutterControl(byte targetValue) {
     }
   }
 
-  if (targetValue < ShutterConfig.CurrentValue || targetValue == 0) {
-    dual_relay_drive_time = calculateDriveTime(targetValue, ShutterConfig.CurrentValue, DIRECTION_DOWN);
+  if (TargetValue < ShutterConfig.CurrentValue || TargetValue == 0) {
+    dual_relay_drive_time = calculateDriveTime(TargetValue, ShutterConfig.CurrentValue, DIRECTION_DOWN);
     if (dual_relay_drive_time > 0) {
       if (DRIVING_DIRECTION == DIRECTION_UP) {
         switch_dual_relay(DIRECTION_NONE);
