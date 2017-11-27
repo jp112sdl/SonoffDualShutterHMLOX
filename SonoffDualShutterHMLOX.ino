@@ -212,14 +212,14 @@ void loop() {
   }
 
   //alle 2 Sekunden Wert an CCU senden
-  if (oldShutterValue != ShutterConfig.CurrentValue) {
-    oldShutterValue = ShutterConfig.CurrentValue;
-    EEPROM.write(idxLastShutterValue, ShutterConfig.CurrentValue);
-    EEPROM.commit();
-    if (millis() - LastMillis > 2500) {
-      LastMillis = millis();
+  if (millis() - LastMillis > 2000) {
+    LastMillis = millis();
+    if (oldShutterValue != ShutterConfig.CurrentValue) {
+      oldShutterValue = ShutterConfig.CurrentValue;
+      EEPROM.write(idxLastShutterValue, ShutterConfig.CurrentValue);
+      EEPROM.commit();
       float ccuVal = float(ShutterConfig.CurrentValue / 100.0);
-      //if (GlobalConfig.BackendType == BackendType_HomeMatic) setStateCUxD(HomeMaticConfig.ChannelName + ".LEVEL", String(ccuVal));
+      if (GlobalConfig.BackendType == BackendType_HomeMatic) setStateCUxD(HomeMaticConfig.ChannelName + ".SET_STATE", String(ccuVal));
     }
   }
 }

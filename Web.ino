@@ -7,7 +7,7 @@ const char HTTP_CONF_LOX[] PROGMEM = "<div><label>UDP Port:</label></div><div><i
 const char HTTP_STATUSLABEL[] PROGMEM = "<div class='l c'>{sl}</div>";
 const char HTTP_HOME_BUTTON[] PROGMEM = "<div><input class='lnkbtn' type='button' value='Zur&uuml;ck' onclick=\"window.location.href='/'\" /></div>";
 const char HTTP_SAVE_BUTTON[] PROGMEM = "<div><button name='btnSave' value='1' type='submit'>Speichern</button></div>";
-const char HTTP_UPDOWN_BUTTONS[] PROGMEM = "<span class='l'><div><button name='btnAction' onclick='SetState(\"/set?val=100\"); return false;'>HOCH</button></div><div class='l ls'><label id='_ls'>{ls}%</label></div><div><button name='btnAction' onclick='SetState(\"/set?val=0\"); return false;'>RUNTER</button></div><hr /><div><button class='stpbtn' name='btnAction' onclick='SetState(\"/set?val=stop\"); return false;'>STOP</button></div></span><hr /><div><button class='btnWert' name='btnAction' onclick='SetState(\"/set?val=\"+document.getElementById(\"shutter_value\").value); return false;'>FAHRE ZU WERT</button><input class='i' type='text' id='shutter_value' name='shutter_value' placeholder='Wert %' pattern='[0-9]{1,3}' value='' maxlength='3'></div>";
+const char HTTP_UPDOWN_BUTTONS[] PROGMEM = "<span class='l'><div><button name='btnAction' onclick='SetState(\"/set?level=100\"); return false;'>HOCH</button></div><div class='l ls'><label id='_ls'>{ls}%</label></div><div><button name='btnAction' onclick='SetState(\"/set?level=0\"); return false;'>RUNTER</button></div><hr /><div><button class='stpbtn' name='btnAction' onclick='SetState(\"/set?direction=stop\"); return false;'>STOP</button></div></span><hr /><div><button class='btnWert' name='btnAction' onclick='SetState(\"/set?level=\"+document.getElementById(\"shutter_value\").value); return false;'>FAHRE ZU WERT</button><input class='i' type='text' id='shutter_value' name='shutter_value' placeholder='Wert %' pattern='[0-9]{1,3}' value='' maxlength='3'></div>";
 
 void initWebServer() {
   WebServer.on("/set", webSetValue);
@@ -30,21 +30,45 @@ void initWebServer() {
 }
 
 void webSetValue() {
+  bool useCUxDValue = false;
+  int val = 0;
   if (WebServer.args() > 0) {
     for (int i = 0; i < WebServer.args(); i++) {
-      if (WebServer.argName(i) == "val")
-        if (WebServer.arg(i) != "")  {
-          if (WebServer.arg(i) == "stop") {
-            switch_dual_relay(DIRECTION_NONE);
-            switch_dual_relay(DIRECTION_NONE);
-            break;
-          }
-          int val = atoi(WebServer.arg(i).c_str());
-          val = val;
-          DEBUG("Web val = "+String(val));
-          if (val >= 0 && val <= 100)
-            ShutterControl(val);
+      if (WebServer.argName(i) == "level") {
+        int val = atoi(WebServer.arg(i).c_str());
+        DEBUG("webSetValue LEVEL = " + String(val));
+        if (val >= 0 && val <= 100) {
+          ShutterControl(val);
         }
+        break;
+      }
+      if (WebServer.argName(i) == "cuxdlevel") {
+        int val = atoi(WebServer.arg(i).c_str());
+        val = val / 10;
+        DEBUG("webSetValue CUXDLEVEL = " + String(val));
+        if (val >= 0 && val <= 100) {
+          ShutterControl(val);
+        }
+        break;
+      }
+      if (WebServer.argName(i) == "direction") {
+        if (WebServer.arg(i) == "stop") {
+          DEBUG("webSetValue: STOP");
+          switch_dual_relay(DIRECTION_NONE);
+          switch_dual_relay(DIRECTION_NONE);
+          break;
+        }
+        if (WebServer.arg(i) == "up") {
+          DEBUG("webSetValue: UP");
+          switch_dual_relay(DIRECTION_UP);
+          break;
+        }
+        if (WebServer.arg(i) == "down") {
+          DEBUG("webSetValue: DOWN");
+          switch_dual_relay(DIRECTION_DOWN);
+          break;
+        }
+      }
     }
   }
   sendDefaultWebCmdReply();
