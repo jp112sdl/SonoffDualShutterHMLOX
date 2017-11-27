@@ -60,11 +60,13 @@ void webSetValue() {
         }
         if (WebServer.arg(i) == "up") {
           DEBUG("webSetValue: UP");
+          dual_relay_switched_millis = millis();
           switch_dual_relay(DIRECTION_UP);
           break;
         }
         if (WebServer.arg(i) == "down") {
           DEBUG("webSetValue: DOWN");
+          dual_relay_switched_millis = millis();
           switch_dual_relay(DIRECTION_DOWN);
           break;
         }
