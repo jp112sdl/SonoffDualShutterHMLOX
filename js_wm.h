@@ -9,18 +9,9 @@ const char HTTP_SCRIPT[] PROGMEM = R"=====(
     var ccu = document.getElementById('ccu'); 
     var qsa = document.querySelectorAll('[id^=div_]'); 
     qsa.forEach(function(e) { 
-      e.style.display = 'run-in'; 
+      e.style.display = 'block'; 
       }); 
       
-    qsa = document.querySelectorAll('[id$=_pow]'); 
-    qsa.forEach(function(e) { 
-      e.style.display = 'run-in'; 
-      });
-       
-    qsa = document.querySelectorAll('[id$=_switch]'); 
-    qsa.forEach(function(e) { 
-      e.style.display = 'run-in'; 
-      }); 
         
     if (backendtype) { 
       var flt; 
@@ -31,29 +22,12 @@ const char HTTP_SCRIPT[] PROGMEM = R"=====(
           break; 
         case 1: 
           flt = 'hm'; 
-          if (ccu) ccu.placeholder = 'IP:Port des LOXONE Miniservers'; 
+          if (ccu) ccu.placeholder = 'IP des LOXONE Miniservers'; 
           break; 
       } 
       qsa = document.querySelectorAll('[id^=div_' + flt + ']'); 
       qsa.forEach(function(e) { e.style.display = 'none'; }); 
     } 
-    
-    if (sonoffmodel) { 
-      switch (parseInt(sonoffmodel.value)) { 
-        case 0: 
-          qsa = document.querySelectorAll('[id$=_pow]'); 
-          qsa.forEach(function(e) { e.style.display = 'none'; }); 
-          break; 
-        case 1: 
-          qsa = document.querySelectorAll('[id$=_switch]'); 
-          qsa.forEach(function(e) { e.style.display = 'none'; }); 
-          break; 
-        case 2: 
-          qsa = document.querySelectorAll('[id$=_pow]'); 
-          qsa.forEach(function(e) { e.style.display = 'none'; }); 
-          break; 
-      } 
-    }
   }
 </script>
 )=====";

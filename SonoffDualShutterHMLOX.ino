@@ -15,7 +15,7 @@
 #include "js_fwupd.h"
 #include <EEPROM.h>
 
-const String FIRMWARE_VERSION = "0.1";
+const String FIRMWARE_VERSION = "0.2";
 const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/SonoffDualShutterHMLOX/releases/latest";
 
 #define IPSIZE                              16
@@ -23,10 +23,10 @@ const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/So
 #define LEDPin                              13
 #define ConfigPortalTimeout                180  //Timeout (Sekunden) des AccessPoint-Modus
 #define UDPPORT                           6176
-#define HTTPTimeOut                       2000
+#define HTTPTimeOut                       1000
 #define EXTRADRIVETIMEFORENDPOSTIONMILLIS 1500
 //#define                                   SERIALDEBUG
-#define                                   UDPDEBUG
+//#define                                   UDPDEBUG
 
 #ifdef UDPDEBUG
 const char * SYSLOGIP = "192.168.1.251";
@@ -149,6 +149,14 @@ void setup() {
   if (!loadSystemConfig()) startWifiManager = true;
   //Ab hier ist die Config geladen und alle Variablen sind mit deren Werten belegt!
 
+  //bei Loxone die Fahrzeiten fiktiv setzen
+  if (GlobalConfig.BackendType == BackendType_Loxone) {
+    ShutterConfig.DriveTimeUp = 1200.0;
+    ShutterConfig.DriveTimeDown = 1200.0;
+    ShutterConfig.MotorSwitchingTime  = 1.0;
+    ShutterConfig.DriveUntilCalib = 0;
+  }
+
   if (doWifiConnect()) {
     Serial.println(F("\nWLAN erfolgreich verbunden!"));
     printWifiStatus();
@@ -227,9 +235,9 @@ void loop() {
 void ShutterControl(byte TargetValue) {
   DEBUG("ShutterControl(" + String(TargetValue) + ")");
 
-  ShutterConfig.DriveCounter++;
+  if (ShutterConfig.DriveUntilCalib > 0) ShutterConfig.DriveCounter++;
 
-  if (ShutterConfig.DriveCounter > ShutterConfig.DriveUntilCalib) {
+  if (ShutterConfig.DriveCounter > ShutterConfig.DriveUntilCalib && ShutterConfig.DriveUntilCalib > 0) {
     ShutterConfig.DriveCounter = 1;
     TempTargetValue = TargetValue;
     TargetValue = 100;

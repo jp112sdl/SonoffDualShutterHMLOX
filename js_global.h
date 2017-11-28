@@ -18,9 +18,11 @@ function isInt(v){
 }
 
 function refreshState(json_obj, rekursiv) { 
-if (json_obj == null) json_obj = JSON.parse(Get('/getState')); 
-if (json_obj.state) document.getElementById('_ls').innerHTML = json_obj.state + "%"; 
-if (rekursiv) setTimeout(function(){ refreshState(null, true); }, 3000); 
+  if (document.getElementById('_ls') != null) {
+   if (json_obj == null) json_obj = JSON.parse(Get('/getState')); 
+   if (json_obj.state) document.getElementById('_ls').innerHTML = json_obj.state + "%"; 
+  }
+  if (rekursiv) setTimeout(function(){ refreshState(null, true); }, 3000); 
 } 
 
 /*init refresh:*/ 

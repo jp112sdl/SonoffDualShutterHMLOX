@@ -55,10 +55,9 @@ bool doWifiConnect() {
         backend = F("<option value='0'>HomeMatic</option><option selected value='1'>Loxone</option>");
         break;
       default:
-        backend = F("<option value='0'>HomeMatic</option><option value='1'>Loxone</option>");
+        backend = F("<option selected value='0'>HomeMatic</option><option value='1'>Loxone</option>");
         break;
     }
-    backend = F("<option selected value='0'>HomeMatic</option>"); //erstmal nur HomeMatic
     WiFiManagerParameter custom_backendtype("backendtype", "Backend", "", 8, 2, backend.c_str());
 
     WiFiManagerParameter custom_text("<br/><br><div>Statische IP (wenn leer, dann DHCP):</div>");
@@ -120,6 +119,7 @@ bool doWifiConnect() {
       strcpy(GlobalConfig.DeviceName, custom_sonoffname.getValue());
       //strcpy(LoxoneConfig.Username, custom_loxusername.getValue());
       //strcpy(LoxoneConfig.Password, custom_loxpassword.getValue());
+      strcpy(LoxoneConfig.UDPPort, custom_loxudpport.getValue());
 
       saveSystemConfig();
 
