@@ -142,7 +142,10 @@ void configHtml() {
         ShutterConfig.DriveUntilCalib = atoi(WebServer.arg(i).c_str());
     }
     if (sc) {
-      saveSuccess = saveSystemConfig();
+      if (ShutterConfig.DriveTimeDown != 0.0 && ShutterConfig.DriveTimeUp != 0.0) {
+        saveSuccess = saveSystemConfig();
+      } else saveSuccess = false;
+      HomeMaticConfig.UseCCU = (String(GlobalConfig.ccuIP) != "0.0.0.0");
       if (GlobalConfig.BackendType == BackendType_HomeMatic) {
         String devName = getStateCUxD(GlobalConfig.DeviceName, "Address") ;
         if (devName != "null") {
@@ -217,7 +220,14 @@ void configHtml() {
 
 
 void sendDefaultWebCmdReply() {
-  String reply =  "{\"state\": \"" + String(ShutterConfig.CurrentValue) + "\"}";
+  String currentDirection = "NONE";
+  if (DRIVING_DIRECTION == DIRECTION_UP) currentDirection = "UP";
+  if (DRIVING_DIRECTION == DIRECTION_DOWN) currentDirection = "DOWN";
+  String reply =  "{\"motor_direction\": \"" + currentDirection + "\"";
+  if (GlobalConfig.BackendType == BackendType_HomeMatic) {
+    reply +=  " , \"state\": \"" + String(ShutterConfig.CurrentValue) + "\"";
+  }
+  reply += "}";
   //DEBUG("Sending Web-Reply: " + reply);
   WebServer.send(200, "application/json", reply);
 }

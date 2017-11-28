@@ -33,7 +33,7 @@ const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/So
 #define HTTPTimeOut                       1000
 #define EXTRADRIVETIMEFORENDPOSTIONMILLIS 1500
 //#define                                   SERIALDEBUG
-//#define                                   UDPDEBUG
+#define                                   UDPDEBUG
 
 #ifdef UDPDEBUG
 const char * SYSLOGIP = "192.168.1.251";
@@ -69,6 +69,7 @@ struct globalconfig_t {
 
 struct hmconfig_t {
   String ChannelName = "";
+  bool UseCCU = false;
 } HomeMaticConfig;
 
 struct loxoneconfig_t {
@@ -158,11 +159,13 @@ void setup() {
 
   //bei Loxone die Fahrzeiten fiktiv setzen
   if (GlobalConfig.BackendType == BackendType_Loxone) {
-    ShutterConfig.DriveTimeUp = 1200.0;
-    ShutterConfig.DriveTimeDown = 1200.0;
+    ShutterConfig.DriveTimeUp = 0.0;
+    ShutterConfig.DriveTimeDown = 0.0;
     ShutterConfig.MotorSwitchingTime  = 1.0;
     ShutterConfig.DriveUntilCalib = 0;
   }
+
+  HomeMaticConfig.UseCCU = (String(GlobalConfig.ccuIP) != "0.0.0.0");
 
   if (doWifiConnect()) {
     Serial.println(F("\nWLAN erfolgreich verbunden!"));
@@ -209,7 +212,11 @@ void loop() {
   }
 
   //Schalte Relais ab, wenn die Fahrzeit erreicht wurde
-  if (DRIVING_DIRECTION > DIRECTION_NONE && dual_relay_switched_millis > 0 && millis() - dual_relay_switched_millis > dual_relay_drive_time) {
+  if (ShutterConfig.DriveTimeUp   > 0.0  &&
+      ShutterConfig.DriveTimeDown > 0.0  && 
+      DRIVING_DIRECTION > DIRECTION_NONE &&
+      dual_relay_switched_millis > 0     &&
+      millis() - dual_relay_switched_millis > dual_relay_drive_time) {
     DEBUG("Schalte Relais ab!");
     switch_dual_relay(DIRECTION_NONE);
     switch_dual_relay(DIRECTION_NONE); //doppelt hält besser... sicher ist sicher
