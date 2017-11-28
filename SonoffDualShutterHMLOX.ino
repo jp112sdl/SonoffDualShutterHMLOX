@@ -1,3 +1,10 @@
+/*
+  Generic ESP8285 Module
+  Flash Mode: DOUT
+  Flash Frequency: 40 MHz
+  CPU Frequency: 80 MHz
+  Flash Size: 1M (64k SPIFFS)
+*/
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WebServer.h>
