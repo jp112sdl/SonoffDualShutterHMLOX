@@ -22,7 +22,7 @@
 #include "js_fwupd.h"
 #include <EEPROM.h>
 
-const String FIRMWARE_VERSION = "0.2";
+const String FIRMWARE_VERSION = "0.3";
 const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/SonoffDualShutterHMLOX/releases/latest";
 
 #define IPSIZE                              16
