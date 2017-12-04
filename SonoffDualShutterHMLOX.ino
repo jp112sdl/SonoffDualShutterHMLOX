@@ -33,7 +33,7 @@ const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/So
 #define HTTPTimeOut                       1000
 #define EXTRADRIVETIMEFORENDPOSTIONMILLIS 1500
 //#define                                   SERIALDEBUG
-#define                                   UDPDEBUG
+//#define                                   UDPDEBUG
 
 #ifdef UDPDEBUG
 const char * SYSLOGIP = "192.168.1.251";
