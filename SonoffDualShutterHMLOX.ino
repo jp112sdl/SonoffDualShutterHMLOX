@@ -122,7 +122,7 @@ void setup() {
   Serial.begin(19200);
   switch_dual_relay(DIRECTION_NONE);
   Serial.println("\nSonoff DUAL " + WiFi.macAddress() + " startet...");
-  pinMode(LEDPin,    OUTPUT);
+  pinMode(LEDPin, OUTPUT);
 
   Serial.println(F("Config-Modus durch bootConfigMode aktivieren? "));
   if (SPIFFS.begin()) {
