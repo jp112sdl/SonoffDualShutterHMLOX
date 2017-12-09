@@ -7,10 +7,11 @@
 //#define JSONCONFIG_LOXUSERNAME            "loxusername"
 //#define JSONCONFIG_LOXPASSWORD            "loxpassword"
 #define JSONCONFIG_BACKENDTYPE            "backendtype"
+#define JSONCONFIG_MODEL                  "model"
 #define JSONCONFIG_SHUTTER_MOTORSWITCHINGTIME "sh_mst"
 #define JSONCONFIG_SHUTTER_DRIVETIMEUP        "sh_dtup"
 #define JSONCONFIG_SHUTTER_DRIVETIMEDOWN      "sh_dtdown"
-#define JSONCONFIG_SHUTTER_DRIVEUNTILCALIB    "sh_cal"
+#define JSONCONFIG_SHUTTER_DRIVESUNTILCALIB    "sh_cal"
 
 bool loadSystemConfig() {
   DEBUG(F("loadSystemConfig mounting FS..."), "loadSystemConfig()", _slInformational);
@@ -43,11 +44,12 @@ bool loadSystemConfig() {
           //((json[JSONCONFIG_LOXPASSWORD]).as<String>()).toCharArray(LoxoneConfig.Password, VARIABLESIZE);
           ((json[JSONCONFIG_LOXUDPPORT]).as<String>()).toCharArray(LoxoneConfig.UDPPort, 10);
           GlobalConfig.BackendType = json[JSONCONFIG_BACKENDTYPE];
+                    GlobalConfig.Model = json[JSONCONFIG_MODEL];
           GlobalConfig.Hostname = "Sonoff-" + String(GlobalConfig.DeviceName);
           ShutterConfig.MotorSwitchingTime = json[JSONCONFIG_SHUTTER_MOTORSWITCHINGTIME].as<float>();
           ShutterConfig.DriveTimeUp = json[JSONCONFIG_SHUTTER_DRIVETIMEUP].as<float>();
           ShutterConfig.DriveTimeDown = json[JSONCONFIG_SHUTTER_DRIVETIMEDOWN].as<float>();
-          ShutterConfig.DriveUntilCalib = json[JSONCONFIG_SHUTTER_DRIVEUNTILCALIB];
+          ShutterConfig.DrivesUntilCalib = json[JSONCONFIG_SHUTTER_DRIVESUNTILCALIB];
         } else {
           DEBUG(F("\nloadSystemConfig ERROR loading config"), "loadSystemConfig()", _slInformational);
         }
@@ -78,11 +80,12 @@ bool saveSystemConfig() {
   //json[JSONCONFIG_LOXUSERNAME] = LoxoneConfig.Username;
   //json[JSONCONFIG_LOXPASSWORD] = LoxoneConfig.Password;
   json[JSONCONFIG_LOXUDPPORT] = LoxoneConfig.UDPPort;
+  json[JSONCONFIG_MODEL] = GlobalConfig.Model;
 
   json[JSONCONFIG_SHUTTER_MOTORSWITCHINGTIME] = ShutterConfig.MotorSwitchingTime;
   json[JSONCONFIG_SHUTTER_DRIVETIMEUP] = ShutterConfig.DriveTimeUp;
   json[JSONCONFIG_SHUTTER_DRIVETIMEDOWN] = ShutterConfig.DriveTimeDown;
-  json[JSONCONFIG_SHUTTER_DRIVEUNTILCALIB] = ShutterConfig.DriveUntilCalib;
+  json[JSONCONFIG_SHUTTER_DRIVESUNTILCALIB] = ShutterConfig.DrivesUntilCalib;
 
   SPIFFS.remove("/" + configJsonFile);
   File configFile = SPIFFS.open("/" + configJsonFile, "w");

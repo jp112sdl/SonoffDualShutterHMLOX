@@ -1,14 +1,43 @@
-void switch_dual_relay(byte DIRECTION) {
+void switch_relay(byte DIRECTION) {
   DEBUG("Schalte Relais Num " + String(DIRECTION));
-  dual_relay_switched_millis = millis();
+  relay_switched_millis = millis();
   DRIVING_DIRECTION = DIRECTION;
   if (DRIVING_DIRECTION > DIRECTION_NONE) shutter_start_value_percent = ShutterConfig.CurrentValue;
+
+  switch (GlobalConfig.Model) {
+    case Model_Dual:
+      switch_dual_relay(DIRECTION);
+      break;
+    case Model_HVIO:
+      switch_hvio_relay(DIRECTION);
+      break;
+  }
+}
+
+void switch_hvio_relay(byte DIRECTION) {
+  switch (DIRECTION) {
+    case DIRECTION_NONE:
+      digitalWrite(Relay1PinHVIO, LOW);
+      digitalWrite(Relay2PinHVIO, LOW);
+      break;
+    case DIRECTION_UP:
+      digitalWrite(Relay1PinHVIO, HIGH);
+      digitalWrite(Relay2PinHVIO, LOW);
+      break;
+    case DIRECTION_DOWN:
+      digitalWrite(Relay1PinHVIO, LOW);
+      digitalWrite(Relay2PinHVIO, HIGH);
+      break;
+  }
+}
+
+void switch_dual_relay(byte DIRECTION) {
   Serial.write(0xA0);
   Serial.write(0x04);
   Serial.write(DIRECTION & 0xFF);
   Serial.write(0xA1);
   Serial.write('\n');
-  Serial.flush();  
+  Serial.flush();
 }
 
 byte serial_in_byte;                        // Received byte

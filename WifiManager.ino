@@ -26,7 +26,8 @@ bool doWifiConnect() {
     while (WiFi.status() != WL_CONNECTED) {
       waitCounter++;
       Serial.print(".");
-      digitalWrite(LEDPin, (!(digitalRead(LEDPin))));
+      digitalWrite(LEDPinHVIO, (!(digitalRead(LEDPinHVIO))));
+      digitalWrite(LEDPinDual, (!(digitalRead(LEDPinDual))));
       if (waitCounter == 20) {
         return false;
       }
@@ -37,7 +38,8 @@ bool doWifiConnect() {
   } else {
     WiFiManager wifiManager;
     wifiManager.setDebugOutput(wifiManagerDebugOutput);
-    digitalWrite(LEDPin, LOW);
+    digitalWrite(LEDPinDual, LOW);
+    digitalWrite(LEDPinHVIO, LOW);
     wifiManager.setAPCallback(configModeCallback);
     wifiManager.setSaveConfigCallback(saveConfigCallback);
     WiFiManagerParameter custom_ccuip("ccu", "IP der CCU2", GlobalConfig.ccuIP, IPSIZE, 0, "pattern='((^|\\.)((25[0-5])|(2[0-4]\\d)|(1\\d\\d)|([1-9]?\\d))){4}$'");
@@ -60,10 +62,25 @@ bool doWifiConnect() {
     }
     WiFiManagerParameter custom_backendtype("backendtype", "Backend", "", 8, 2, backend.c_str());
 
+    String model = "";
+    switch (GlobalConfig.Model) {
+      case Model_Dual:
+        model = F("<option selected value='0'>Sonoff Dual</option><option value='1'>HVIO</option>");
+        break;
+      case Model_HVIO:
+        model = F("<option value='0'>Sonoff Dual</option><option selected value='1'>HVIO</option>");
+        break;
+      default:
+        model = F("<option selected value='0'>Sonoff Dual</option><option value='1'>HVIO</option>");
+        break;
+    }
+    WiFiManagerParameter custom_model("model", "Modell", "", 8, 2, model.c_str());
+
     WiFiManagerParameter custom_text("<br/><br><div>Statische IP (wenn leer, dann DHCP):</div>");
     WiFiManagerParameter custom_ip("custom_ip", "IP-Adresse", (String(SonoffNetConfig.ip) != "0.0.0.0") ? SonoffNetConfig.ip : "", IPSIZE, 0, "pattern='((^|\\.)((25[0-5])|(2[0-4]\\d)|(1\\d\\d)|([1-9]?\\d))){4}$'");
     WiFiManagerParameter custom_netmask("custom_netmask", "Netzmaske", (String(SonoffNetConfig.netmask) != "0.0.0.0") ? SonoffNetConfig.netmask : "", IPSIZE, 0, "pattern='((^|\\.)((25[0-5])|(2[0-4]\\d)|(1\\d\\d)|([1-9]?\\d))){4}$'");
     WiFiManagerParameter custom_gw("custom_gw", "Gateway",  (String(SonoffNetConfig.gw) != "0.0.0.0") ? SonoffNetConfig.gw : "", IPSIZE, 0, "pattern='((^|\\.)((25[0-5])|(2[0-4]\\d)|(1\\d\\d)|([1-9]?\\d))){4}$'");
+    wifiManager.addParameter(&custom_model);
     wifiManager.addParameter(&custom_ccuip);
     //wifiManager.addParameter(&custom_loxusername);
     //wifiManager.addParameter(&custom_loxpassword);
@@ -77,7 +94,7 @@ bool doWifiConnect() {
     wifiManager.addParameter(&custom_netmask);
     wifiManager.addParameter(&custom_gw);
 
-    String Hostname = "Sonoff-" + WiFi.macAddress();
+    String Hostname = "Shutter-" + WiFi.macAddress();
 
     wifiManager.setConfigPortalTimeout(ConfigPortalTimeout);
 
@@ -114,6 +131,7 @@ bool doWifiConnect() {
       }
 
       GlobalConfig.BackendType = (atoi(custom_backendtype.getValue()));
+      GlobalConfig.Model = (atoi(custom_model.getValue()));
 
       strcpy(GlobalConfig.ccuIP, custom_ccuip.getValue());
       strcpy(GlobalConfig.DeviceName, custom_sonoffname.getValue());

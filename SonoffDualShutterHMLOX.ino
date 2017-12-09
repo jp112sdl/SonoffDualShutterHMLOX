@@ -22,17 +22,23 @@
 #include "js_fwupd.h"
 #include <EEPROM.h>
 
-const String FIRMWARE_VERSION = "0.3";
+const String FIRMWARE_VERSION = "1.0";
 const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/SonoffDualShutterHMLOX/releases/latest";
 
 #define IPSIZE                              16
 #define VARIABLESIZE                       255
-#define LEDPin                              13
+#define LEDPinDual                          13
+//HVIO:
+#define LEDPinHVIO            15
+#define Relay1PinHVIO          4
+#define Relay2PinHVIO          5
+#define Switch1PinHVIO        12
+#define Switch2PinHVIO        13
 #define ConfigPortalTimeout                180  //Timeout (Sekunden) des AccessPoint-Modus
 #define UDPPORT                           6176
 #define HTTPTimeOut                       1000
 #define EXTRADRIVETIMEFORENDPOSTIONMILLIS 1500
-//#define                                   SERIALDEBUG
+#define                                   SERIALDEBUG
 //#define                                   UDPDEBUG
 
 #ifdef UDPDEBUG
@@ -45,9 +51,15 @@ enum BackendTypes_e {
   BackendType_Loxone
 };
 
-enum OnOff { OFF, ON };
+enum Model_e {
+  Model_Dual,
+  Model_HVIO
+};
+
+enum OnOff { Off, On };
 
 enum Directions { DIRECTION_NONE, DIRECTION_DOWN, DIRECTION_UP };
+enum Keys       { KEY_NONE, KEY_DOWN, KEY_UP };
 
 enum _SyslogSeverity {
   _slEmergency,
@@ -64,7 +76,8 @@ struct globalconfig_t {
   char ccuIP[IPSIZE]   = "";
   char DeviceName[VARIABLESIZE] = "";
   byte BackendType = BackendType_HomeMatic;
-  String Hostname = "Sonoff";
+  String Hostname = "Shutter";
+  byte Model = Model_Dual;
 } GlobalConfig;
 
 struct hmconfig_t {
@@ -88,16 +101,18 @@ struct shutterconfig_t {
   float MotorSwitchingTime  = 1.0;
   float DriveTimeUp = 50.0;
   float DriveTimeDown = 50.0;
-  byte DriveUntilCalib = 0;
+  byte DrivesUntilCalib = 0;
   byte CurrentValue = 0;
   byte DriveCounter = 0;
 } ShutterConfig;
 
 bool OTAStart = false;
 bool UDPReady = false;
-unsigned long dual_relay_switched_millis = 0;
+unsigned long KeyPressMillis = 0;
+byte LEDPin = 13;
+unsigned long relay_switched_millis = 0;
 unsigned long LastMillis = 0;
-int dual_relay_drive_time = 0;
+int relay_drive_time = 0;
 byte DRIVING_DIRECTION = DIRECTION_NONE;
 byte shutter_start_value_percent = 0;
 byte oldShutterValue = 0;
@@ -120,9 +135,11 @@ struct udp_t {
 
 void setup() {
   Serial.begin(19200);
-  switch_dual_relay(DIRECTION_NONE);
+  switch_relay(DIRECTION_NONE);
   Serial.println("\nSonoff DUAL " + WiFi.macAddress() + " startet...");
-  pinMode(LEDPin, OUTPUT);
+  pinMode(LEDPinDual, OUTPUT);
+  pinMode(LEDPinHVIO, OUTPUT);
+  pinMode(Switch1PinHVIO, INPUT_PULLUP);
 
   Serial.println(F("Config-Modus durch bootConfigMode aktivieren? "));
   if (SPIFFS.begin()) {
@@ -146,9 +163,11 @@ void setup() {
         startWifiManager = true;
         break;
       }
-      digitalWrite(LEDPin, HIGH);
+      digitalWrite(LEDPinDual, HIGH);
+      digitalWrite(LEDPinHVIO, LOW);
       delay(100);
-      digitalWrite(LEDPin, LOW);
+      digitalWrite(LEDPinDual, LOW);
+      digitalWrite(LEDPinHVIO, HIGH);
       delay(100);
     }
     Serial.println("Config-Modus " + String(((startWifiManager) ? "" : "nicht ")) + "aktiviert.");
@@ -162,7 +181,7 @@ void setup() {
     ShutterConfig.DriveTimeUp = 0.0;
     ShutterConfig.DriveTimeDown = 0.0;
     ShutterConfig.MotorSwitchingTime  = 1.0;
-    ShutterConfig.DriveUntilCalib = 0;
+    ShutterConfig.DrivesUntilCalib = 0;
   }
 
   HomeMaticConfig.UseCCU = (String(GlobalConfig.ccuIP) != "0.0.0.0");
@@ -172,12 +191,28 @@ void setup() {
     printWifiStatus();
   } else ESP.restart();
 
-  startOTAhandling();
+  switch (GlobalConfig.Model) {
+    case Model_Dual:
+      DEBUG("\nModell = Sonoff Dual");
+      LEDPin = LEDPinDual;
+      break;
+    case Model_HVIO:
+      DEBUG("\nModell = HVIO");
+      LEDPin = LEDPinHVIO;
+      pinMode(Relay1PinHVIO, OUTPUT);
+      pinMode(Relay2PinHVIO, OUTPUT);
+      pinMode(Switch1PinHVIO, INPUT_PULLUP);
+      pinMode(Switch2PinHVIO, INPUT_PULLUP);
+      break;
+  }
+  pinMode(LEDPin, OUTPUT);
 
   initWebServer();
   if (!MDNS.begin(GlobalConfig.Hostname.c_str())) {
     DEBUG("Error setting up MDNS responder!");
   }
+
+  startOTAhandling();
 
   DEBUG("Starte UDP-Handler an Port " + String(UDPPORT) + "...");
   UDPClient.UDP.begin(UDPPORT);
@@ -198,11 +233,48 @@ void setup() {
 }
 
 void loop() {
-  if (dual_relay_switched_millis > millis())
-    dual_relay_switched_millis = millis();
+  if (relay_switched_millis > millis())
+    relay_switched_millis = millis();
   ArduinoOTA.handle();
   if (!OTAStart) {
     WebServer.handleClient();
+  }
+
+  //Tasterbedienung Taster abarbeiten
+  if (GlobalConfig.Model == Model_HVIO) {
+    byte KeyPressed = KEY_NONE;
+    if (digitalRead(Switch1PinHVIO) == LOW) KeyPressed = KEY_UP;
+    if (digitalRead(Switch2PinHVIO) == LOW) KeyPressed = KEY_DOWN;
+
+    if (KeyPressed > KEY_NONE) {
+      if (KeyPressMillis == 0) {
+        DEBUG("KEY "+String(KeyPressed)+" PRESSED");
+        bool doNothing = false;
+        if (DRIVING_DIRECTION > DIRECTION_NONE) {
+          doNothing = true;
+          switch_relay(DIRECTION_NONE);
+          delay(ShutterConfig.MotorSwitchingTime * 1000);
+        }
+
+        if (!doNothing) {
+          if (KeyPressed == KEY_UP) {
+            ShutterControl(100);
+          }
+
+          if (KeyPressed == KEY_DOWN) {
+            ShutterControl(0);
+          }
+          KeyPressMillis = millis();
+        }
+      }
+    } else {
+      if (KeyPressMillis > 0 && millis() - KeyPressMillis > 2000) {
+        DEBUG("KEY RELEASED, KeyPressMillis = "+String(millis() - KeyPressMillis));
+        switch_relay(DIRECTION_NONE);
+        delay(ShutterConfig.MotorSwitchingTime * 1000);
+      }
+      KeyPressMillis = 0;
+    }
   }
 
   //aktuellen Stand während der Fahrt berechnen
@@ -213,15 +285,15 @@ void loop() {
 
   //Schalte Relais ab, wenn die Fahrzeit erreicht wurde
   if (ShutterConfig.DriveTimeUp   > 0.0  &&
-      ShutterConfig.DriveTimeDown > 0.0  && 
+      ShutterConfig.DriveTimeDown > 0.0  &&
       DRIVING_DIRECTION > DIRECTION_NONE &&
-      dual_relay_switched_millis > 0     &&
-      millis() - dual_relay_switched_millis > dual_relay_drive_time) {
+      relay_switched_millis > 0     &&
+      millis() - relay_switched_millis > relay_drive_time) {
     DEBUG("Schalte Relais ab!");
-    switch_dual_relay(DIRECTION_NONE);
-    switch_dual_relay(DIRECTION_NONE); //doppelt hält besser... sicher ist sicher
-    dual_relay_switched_millis = 0;
-    dual_relay_drive_time = 0;
+    switch_relay(DIRECTION_NONE);
+    switch_relay(DIRECTION_NONE); //doppelt hält besser... sicher ist sicher
+    relay_switched_millis = 0;
+    relay_drive_time = 0;
   }
 
   //Fahrt-Zähler für Kalibrierungsfahrten auf 0 setzen, wenn eine der beiden Endlagen angefahren wurde
@@ -233,9 +305,10 @@ void loop() {
     ShutterControl(TempTargetValue);
   }
 
-  //alle 2 Sekunden Wert an CCU senden
+  //alle 2 Sekunden Wert in EEPROM speichern und an CCU senden
   if (millis() - LastMillis > 2000) {
     LastMillis = millis();
+    //aber nur während der Fahrt
     if (oldShutterValue != ShutterConfig.CurrentValue) {
       oldShutterValue = ShutterConfig.CurrentValue;
       EEPROM.write(idxLastShutterValue, ShutterConfig.CurrentValue);
@@ -249,9 +322,9 @@ void loop() {
 void ShutterControl(byte TargetValue) {
   DEBUG("ShutterControl(" + String(TargetValue) + ")");
 
-  if (ShutterConfig.DriveUntilCalib > 0) ShutterConfig.DriveCounter++;
+  if (ShutterConfig.DrivesUntilCalib > 0) ShutterConfig.DriveCounter++;
 
-  if (ShutterConfig.DriveCounter > ShutterConfig.DriveUntilCalib && ShutterConfig.DriveUntilCalib > 0) {
+  if (ShutterConfig.DriveCounter > ShutterConfig.DrivesUntilCalib && ShutterConfig.DrivesUntilCalib > 0) {
     ShutterConfig.DriveCounter = 1;
     TempTargetValue = TargetValue;
     TargetValue = 100;
@@ -260,24 +333,24 @@ void ShutterControl(byte TargetValue) {
   }
 
   if (TargetValue > ShutterConfig.CurrentValue || TargetValue == 100) {
-    dual_relay_drive_time = calculateDriveTime(TargetValue, ShutterConfig.CurrentValue, DIRECTION_UP);
-    if (dual_relay_drive_time > 0) {
+    relay_drive_time = calculateDriveTime(TargetValue, ShutterConfig.CurrentValue, DIRECTION_UP);
+    if (relay_drive_time > 0) {
       if (DRIVING_DIRECTION == DIRECTION_DOWN) {
-        switch_dual_relay(DIRECTION_NONE);
+        switch_relay(DIRECTION_NONE);
         delay(ShutterConfig.MotorSwitchingTime * 1000);
       }
-      switch_dual_relay(DIRECTION_UP);
+      switch_relay(DIRECTION_UP);
     }
   }
 
   if (TargetValue < ShutterConfig.CurrentValue || TargetValue == 0) {
-    dual_relay_drive_time = calculateDriveTime(TargetValue, ShutterConfig.CurrentValue, DIRECTION_DOWN);
-    if (dual_relay_drive_time > 0) {
+    relay_drive_time = calculateDriveTime(TargetValue, ShutterConfig.CurrentValue, DIRECTION_DOWN);
+    if (relay_drive_time > 0) {
       if (DRIVING_DIRECTION == DIRECTION_UP) {
-        switch_dual_relay(DIRECTION_NONE);
+        switch_relay(DIRECTION_NONE);
         delay(ShutterConfig.MotorSwitchingTime * 1000);
       }
-      switch_dual_relay(DIRECTION_DOWN);
+      switch_relay(DIRECTION_DOWN);
     }
   }
 }
