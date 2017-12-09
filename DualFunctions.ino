@@ -21,8 +21,8 @@ void switch_hvio_relay(byte DIRECTION) {
       digitalWrite(Relay2PinHVIO, LOW);
       break;
     case DIRECTION_UP:
-      digitalWrite(Relay1PinHVIO, HIGH);
       digitalWrite(Relay2PinHVIO, LOW);
+      digitalWrite(Relay1PinHVIO, HIGH);
       break;
     case DIRECTION_DOWN:
       digitalWrite(Relay1PinHVIO, LOW);
