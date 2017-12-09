@@ -38,7 +38,7 @@ const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/So
 #define UDPPORT                           6176
 #define HTTPTimeOut                       1000
 #define EXTRADRIVETIMEFORENDPOSTIONMILLIS 1500
-#define                                   SERIALDEBUG
+//#define                                   SERIALDEBUG
 //#define                                   UDPDEBUG
 
 #ifdef UDPDEBUG
