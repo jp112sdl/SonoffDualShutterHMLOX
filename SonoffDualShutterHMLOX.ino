@@ -28,12 +28,26 @@ const char GITHUB_REPO_URL[] PROGMEM = "https://api.github.com/repos/jp112sdl/So
 #define IPSIZE                              16
 #define VARIABLESIZE                       255
 #define LEDPinDual                          13
+
 //HVIO:
 #define LEDPinHVIO            15
 #define Relay1PinHVIO          4
 #define Relay2PinHVIO          5
 #define Switch1PinHVIO        12
 #define Switch2PinHVIO        13
+
+//Dual R2:
+#define Relay1PinDualR2       12
+#define Relay2PinDualR2        5
+#define Switch1PinDualR2       0
+#define Switch2PinDualR2       9
+#define SwitchPinHeadDualR2   10
+
+byte Switch1 = 0;
+byte Switch2 = 0;
+byte Relay1 = 0;
+byte Relay2 = 0;
+
 #define ConfigPortalTimeout                180  //Timeout (Sekunden) des AccessPoint-Modus
 #define UDPPORT                           6176
 #define HTTPTimeOut                       1000
@@ -53,7 +67,8 @@ enum BackendTypes_e {
 
 enum Model_e {
   Model_Dual,
-  Model_HVIO
+  Model_HVIO,
+  Model_DualR2
 };
 
 enum OnOff { Off, On };
@@ -139,7 +154,8 @@ void setup() {
   Serial.println("\nSonoff DUAL " + WiFi.macAddress() + " startet...");
   pinMode(LEDPinDual, OUTPUT);
   pinMode(LEDPinHVIO, OUTPUT);
-  pinMode(Switch1PinHVIO, INPUT_PULLUP);
+  pinMode(Switch2PinHVIO, INPUT_PULLUP);
+  pinMode(SwitchPinHeadDualR2, INPUT_PULLUP);
 
   Serial.println(F("Config-Modus durch bootConfigMode aktivieren? "));
   if (SPIFFS.begin()) {
@@ -155,11 +171,12 @@ void setup() {
   } else {
     Serial.println(F("-> Nein, SPIFFS mount fail!"));
   }
+
   if (!startWifiManager) {
     Serial.println(F("Config-Modus mit Taster aktivieren?"));
     Serial.flush();
     for (int i = 0; i < 20; i++) {
-      if (ButtonPressed()) {
+      if (digitalRead(SwitchPinHeadDualR2) == LOW || digitalRead(Switch2PinHVIO) == LOW || ButtonPressed()) {
         startWifiManager = true;
         break;
       }
@@ -203,7 +220,23 @@ void setup() {
       pinMode(Relay2PinHVIO, OUTPUT);
       pinMode(Switch1PinHVIO, INPUT_PULLUP);
       pinMode(Switch2PinHVIO, INPUT_PULLUP);
+      Switch1 = Switch1PinHVIO;
+      Switch2 = Switch2PinHVIO;
+      Relay1 = Relay1PinHVIO;
+      Relay2 = Relay2PinHVIO;
       break;
+    case Model_DualR2:
+      DEBUG("\nModell = HVIO");
+      LEDPin = LEDPinDual;
+      pinMode(Relay1PinDualR2, OUTPUT);
+      pinMode(Relay2PinDualR2, OUTPUT);
+      pinMode(Switch1PinDualR2, INPUT_PULLUP);
+      pinMode(Switch2PinDualR2, INPUT_PULLUP);
+      pinMode(SwitchPinHeadDualR2, INPUT_PULLUP);
+      Switch1 = Switch1PinDualR2;
+      Switch2 = Switch2PinDualR2;
+      Relay1 = Relay1PinDualR2;
+      Relay2 = Relay2PinDualR2;
   }
   pinMode(LEDPin, OUTPUT);
 
@@ -243,12 +276,12 @@ void loop() {
   //Tasterbedienung Taster abarbeiten
   if (GlobalConfig.Model == Model_HVIO) {
     byte KeyPressed = KEY_NONE;
-    if (digitalRead(Switch1PinHVIO) == LOW) KeyPressed = KEY_UP;
-    if (digitalRead(Switch2PinHVIO) == LOW) KeyPressed = KEY_DOWN;
+    if (digitalRead(Switch1) == LOW) KeyPressed = KEY_UP;
+    if (digitalRead(Switch2) == LOW) KeyPressed = KEY_DOWN;
 
     if (KeyPressed > KEY_NONE) {
       if (KeyPressMillis == 0) {
-        DEBUG("KEY "+String(KeyPressed)+" PRESSED");
+        DEBUG("KEY " + String(KeyPressed) + " PRESSED");
         bool doNothing = false;
         if (DRIVING_DIRECTION > DIRECTION_NONE) {
           doNothing = true;
@@ -269,7 +302,7 @@ void loop() {
       }
     } else {
       if (KeyPressMillis > 0 && millis() - KeyPressMillis > 2000) {
-        DEBUG("KEY RELEASED, KeyPressMillis = "+String(millis() - KeyPressMillis));
+        DEBUG("KEY RELEASED, KeyPressMillis = " + String(millis() - KeyPressMillis));
         switch_relay(DIRECTION_NONE);
         delay(ShutterConfig.MotorSwitchingTime * 1000);
       }

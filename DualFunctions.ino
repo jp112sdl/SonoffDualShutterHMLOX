@@ -6,27 +6,27 @@ void switch_relay(byte DIRECTION) {
 
   switch (GlobalConfig.Model) {
     case Model_Dual:
-      switch_dual_relay(DIRECTION);
+      switch_hvio_dualr2_relay(DIRECTION);
       break;
     case Model_HVIO:
-      switch_hvio_relay(DIRECTION);
+      switch_hvio_dualr2_relay(DIRECTION);
       break;
   }
 }
 
-void switch_hvio_relay(byte DIRECTION) {
+void switch_hvio_dualr2_relay(byte DIRECTION) {
   switch (DIRECTION) {
     case DIRECTION_NONE:
-      digitalWrite(Relay1PinHVIO, LOW);
-      digitalWrite(Relay2PinHVIO, LOW);
+      digitalWrite(Relay1, LOW);
+      digitalWrite(Relay2, LOW);
       break;
     case DIRECTION_UP:
-      digitalWrite(Relay2PinHVIO, LOW);
-      digitalWrite(Relay1PinHVIO, HIGH);
+      digitalWrite(Relay2, LOW);
+      digitalWrite(Relay1, HIGH);
       break;
     case DIRECTION_DOWN:
-      digitalWrite(Relay1PinHVIO, LOW);
-      digitalWrite(Relay2PinHVIO, HIGH);
+      digitalWrite(Relay1, LOW);
+      digitalWrite(Relay2, HIGH);
       break;
   }
 }
