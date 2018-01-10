@@ -52,7 +52,7 @@ byte Relay2 = 0;
 #define UDPPORT                           6176
 #define HTTPTimeOut                       1000
 #define EXTRADRIVETIMEFORENDPOSTIONMILLIS 1500
-//#define                                   SERIALDEBUG
+#define                                   SERIALDEBUG
 //#define                                   UDPDEBUG
 
 #ifdef UDPDEBUG
@@ -226,7 +226,7 @@ void setup() {
       Relay2 = Relay2PinHVIO;
       break;
     case Model_DualR2:
-      DEBUG("\nModell = HVIO");
+      DEBUG("\nModell = DualR2");
       LEDPin = LEDPinDual;
       pinMode(Relay1PinDualR2, OUTPUT);
       pinMode(Relay2PinDualR2, OUTPUT);
@@ -274,7 +274,7 @@ void loop() {
   }
 
   //Tasterbedienung Taster abarbeiten
-  if (GlobalConfig.Model == Model_HVIO) {
+  if (GlobalConfig.Model != Model_Dual) {
     byte KeyPressed = KEY_NONE;
     if (digitalRead(Switch1) == LOW) KeyPressed = KEY_UP;
     if (digitalRead(Switch2) == LOW) KeyPressed = KEY_DOWN;
