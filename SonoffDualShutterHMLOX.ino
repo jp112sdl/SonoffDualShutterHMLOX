@@ -16,7 +16,6 @@
 #include <Arduino.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <ESP8266Ping.h>
-#include <ESP8266mDNS.h>
 #include "css_global.h"
 #include "js_global.h"
 #include "js_fwupd.h"
@@ -123,7 +122,9 @@ struct shutterconfig_t {
 
 bool OTAStart = false;
 bool UDPReady = false;
+bool WiFiConnected = false;
 unsigned long KeyPressMillis = 0;
+unsigned long LastWiFiReconnectMillis = 0;
 byte LEDPin = 13;
 unsigned long relay_switched_millis = 0;
 unsigned long LastMillis = 0;
@@ -241,9 +242,6 @@ void setup() {
   pinMode(LEDPin, OUTPUT);
 
   initWebServer();
-  if (!MDNS.begin(GlobalConfig.Hostname.c_str())) {
-    DEBUG("Error setting up MDNS responder!");
-  }
 
   startOTAhandling();
 
@@ -268,6 +266,24 @@ void setup() {
 void loop() {
   if (relay_switched_millis > millis())
     relay_switched_millis = millis();
+  if (LastWiFiReconnectMillis > millis())
+    LastWiFiReconnectMillis = millis();
+    
+  //Reconnect WiFi wenn nicht verbunden (alle 30 Sekunden)
+  if (WiFi.status() != WL_CONNECTED) {
+    WiFiConnected = false;
+    if (millis() - LastWiFiReconnectMillis > 30000) {
+      LastWiFiReconnectMillis = millis();
+      DEBUG("WiFi Connection lost! Reconnecting...");
+      WiFi.reconnect();
+    }
+  } else {
+    if (!WiFiConnected) {
+      DEBUG("WiFi reconnected!");
+      WiFiConnected = true;
+    }
+  }  
+    
   ArduinoOTA.handle();
   if (!OTAStart) {
     WebServer.handleClient();
