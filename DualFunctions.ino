@@ -3,12 +3,14 @@ void switch_relay(byte DIRECTION) {
   relay_switched_millis = millis();
   DRIVING_DIRECTION = DIRECTION;
   if (DRIVING_DIRECTION > DIRECTION_NONE) shutter_start_value_percent = ShutterConfig.CurrentValue;
-
   switch (GlobalConfig.Model) {
     case Model_Dual:
       switch_hvio_dualr2_relay(DIRECTION);
       break;
     case Model_HVIO:
+      switch_hvio_dualr2_relay(DIRECTION);
+      break;
+    case Model_DualR2:
       switch_hvio_dualr2_relay(DIRECTION);
       break;
   }
