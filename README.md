@@ -1,6 +1,6 @@
 # SonoffDualShutterHMLOX
 
-## Alternative Firmware für Sonoff Dual (nicht R2!) zur Verwendung als Rollladenaktor
+## Alternative Firmware für Sonoff Dual und HVIO-Board zur Verwendung als Rollladenaktor
 
 ### Hinweis: Die Modifizierung des Sonoff (wenn auch nur softwareseitig) erfolgt auf eigene Gefahr! Während der Arbeiten/des Flash-Vorgangs am geöffneten Gerät darf keine Netzspannung (230V) anliegen!
 
