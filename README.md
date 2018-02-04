@@ -6,6 +6,10 @@
 
 Für Informationen zur Einrichtung etc., bitte das [Wiki](https://github.com/jp112sdl/SonoffDualShutterHMLOX/wiki) benutzen.
 
+Unterstützung weiterer Modelle:
+- eine Firmware für den Sonoff Switch / S20 / Touch / SV / POW gibts [hier](https://github.com/jp112sdl/SonoffHMLOX) 
+- eine Firmware für den Sonoff Dual / HVIO (als Schalt-Aktor) gibts [hier](https://github.com/jp112sdl/SonoffDualHVIOHMLOX) 
+
 [![Github All Releases](https://img.shields.io/github/downloads/jp112sdl/SonoffDualShutterHMLOX/total.svg)](https://github.com/jp112sdl/SonoffDualShutterHMLOX/releases)
 [![GitHub issues](https://img.shields.io/github/issues/jp112sdl/SonoffDualShutterHMLOX.svg)](https://github.com/jp112sdl/SonoffDualShutterHMLOX/issues)
 
