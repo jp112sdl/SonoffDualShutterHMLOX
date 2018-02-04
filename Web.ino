@@ -57,20 +57,20 @@ void webSetValue() {
       if (WebServer.argName(i) == "direction") {
         if (WebServer.arg(i) == "stop") {
           DEBUG("webSetValue: STOP");
-          switch_dual_relay(DIRECTION_NONE);
-          switch_dual_relay(DIRECTION_NONE);
+          switch_relay(DIRECTION_NONE);
+          switch_relay(DIRECTION_NONE);
           break;
         }
         if (WebServer.arg(i) == "up") {
           DEBUG("webSetValue: UP");
-          dual_relay_switched_millis = millis();
-          switch_dual_relay(DIRECTION_UP);
+          relay_switched_millis = millis();
+          switch_relay(DIRECTION_UP);
           break;
         }
         if (WebServer.arg(i) == "down") {
           DEBUG("webSetValue: DOWN");
-          dual_relay_switched_millis = millis();
-          switch_dual_relay(DIRECTION_DOWN);
+          relay_switched_millis = millis();
+          switch_relay(DIRECTION_DOWN);
           break;
         }
       }
@@ -139,7 +139,7 @@ void configHtml() {
       if (WebServer.argName(i) == "up")
         ShutterConfig.DriveTimeUp = strtod(WebServer.arg(i).c_str(), NULL);
       if (WebServer.argName(i) == "cal")
-        ShutterConfig.DriveUntilCalib = atoi(WebServer.arg(i).c_str());
+        ShutterConfig.DrivesUntilCalib = atoi(WebServer.arg(i).c_str());
     }
     if (sc) {
       if (ShutterConfig.DriveTimeDown != 0.0 && ShutterConfig.DriveTimeUp != 0.0) {
@@ -187,7 +187,7 @@ void configHtml() {
   page.replace("{mst}", String(ShutterConfig.MotorSwitchingTime));
   page.replace("{up}", String(ShutterConfig.DriveTimeUp));
   page.replace("{down}", String(ShutterConfig.DriveTimeDown));
-  page.replace("{cal}", String(ShutterConfig.DriveUntilCalib));
+  page.replace("{cal}", String(ShutterConfig.DrivesUntilCalib));
 
 
   page += FPSTR(HTTP_STATUSLABEL);

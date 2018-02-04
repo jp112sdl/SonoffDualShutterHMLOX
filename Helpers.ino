@@ -20,12 +20,12 @@ byte calculatePercent(byte startValue, byte DIRECTION) {
   int x = 0;
   switch (DIRECTION) {
     case DIRECTION_UP:
-      x = (millis() - dual_relay_switched_millis) / (ShutterConfig.DriveTimeUp * 10);
+      x = (millis() - relay_switched_millis) / (ShutterConfig.DriveTimeUp * 10);
       x = startValue + x;
       if (x > 100) x = 100;
       return x;
     case DIRECTION_DOWN:
-      x = (millis() - dual_relay_switched_millis) / (ShutterConfig.DriveTimeDown * 10);
+      x = (millis() - relay_switched_millis) / (ShutterConfig.DriveTimeDown * 10);
       x = startValue - x;
       if (x < 0) x = 0;
       return x;
