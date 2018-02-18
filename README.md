@@ -4,7 +4,7 @@
 
 ### Hinweis: Die Modifizierung des Sonoff (wenn auch nur softwareseitig) erfolgt auf eigene Gefahr! Während der Arbeiten/des Flash-Vorgangs am geöffneten Gerät darf keine Netzspannung (230V) anliegen!
 
-### ACHTUNG: Es gibt keinen Interlock. Das heißt: Sollte ein Relais für eine Richtung mal "kleben"/festhängen und es wird die Gegenrichtung ausgelöst, sind beide Ausgänge spannungsführend, was den Rollladenmotor zerstören kann!
+### ACHTUNG: Es gibt keinen Interlock. Das heißt: Sollte ein Relais für eine Richtung mal "kleben"/festhängen und es wird die Gegenrichtung ausgelöst, sind beide Ausgänge spannungsführend, was den Rollladenmotor zerstören kann! Um dies zu verhindern empfiehlt sich der Einsatz eines Trennrelais [[Link]](https://www.jalousiescout.de/Rolladensteuerung/Trennrelais/Jarolift-Trennrelais-TDR2C.html?gclid=EAIaIQobChMI1abh5Zyw2QIVrp3tCh3N9wQHEAQYASABEgLqEfD_BwE). 
 
 Für Informationen zur Einrichtung etc., bitte das [Wiki](https://github.com/jp112sdl/SonoffDualShutterHMLOX/wiki) benutzen.
 
