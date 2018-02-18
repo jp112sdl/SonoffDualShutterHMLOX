@@ -4,6 +4,8 @@
 
 ### Hinweis: Die Modifizierung des Sonoff (wenn auch nur softwareseitig) erfolgt auf eigene Gefahr! Während der Arbeiten/des Flash-Vorgangs am geöffneten Gerät darf keine Netzspannung (230V) anliegen!
 
+### ACHTUNG: Es gibt keinen Interlock. Das heißt: Sollte ein Relais für eine Richtung mal "kleben"/festhängen und es wird die Gegenrichtung ausgelöst, sind beide Ausgänge spannungsführend, was den Rollladenmotor zerstören kann!
+
 Für Informationen zur Einrichtung etc., bitte das [Wiki](https://github.com/jp112sdl/SonoffDualShutterHMLOX/wiki) benutzen.
 
 Unterstützung weiterer Modelle:
