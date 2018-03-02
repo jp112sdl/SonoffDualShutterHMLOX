@@ -1,5 +1,5 @@
 void DEBUG(String DebugMessage) {
-  DEBUG(DebugMessage, "DummyTag",_slInformational);
+  DEBUG(DebugMessage, "DummyTag", _slInformational);
 }
 void DEBUG(String DebugMessage, String Tag, byte Severity) {
 #ifdef UDPDEBUG
@@ -12,6 +12,7 @@ void DEBUG(String DebugMessage, String Tag, byte Severity) {
 #endif
 
 #ifdef SERIALDEBUG
-  Serial.println(DebugMessage);
+  if (GlobalConfig.Model != Model_Dual)
+    Serial.println(DebugMessage);
 #endif
 }
