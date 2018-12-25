@@ -1,4 +1,4 @@
-# SonoffDualShutterHMLOX
+# SonoffDualShutterHMLOX - DISCONTINUED -
 
 ## Alternative Firmware für Sonoff Dual und HVIO-Board zur Verwendung als Rollladenaktor
 
